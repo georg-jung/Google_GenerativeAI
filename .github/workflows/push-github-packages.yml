@@ -1,0 +1,26 @@
+
+name: Publish to GitHub Packages
+on: 
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+    - name: Restore dependencies
+      run: dotnet restore    
+    - name: Build
+      run: dotnet build --no-restore
+    - name: Test
+      run: dotnet test --no-build --verbosity Minimal 
+    - name: Pack
+      run: dotnet pack -c release -o nupkgs
+    - name: Authenticate against GitHub Packages
+      run: dotnet nuget add source --username georg-jung --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/georg-jung/index.json"
+    - name: Push to GitHub Packages
+      run: dotnet nuget push nupkgs/*.nupkg --source github --skip-duplicate
